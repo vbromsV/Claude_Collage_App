@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Every GitHub build gets a higher version number, so a new APK installs over the old one.
+def buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
+android {
+    namespace 'se.vbroms.collage'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'se.vbroms.collage'
+        minSdk 29
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // A fixed key, so that every new build can be installed as an update of the previous one.
+    signingConfigs {
+        release {
+            storeFile file('collage.keystore')
+            storePassword 'collage-app'
+            keyAlias 'collage'
+            keyPassword 'collage-app'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

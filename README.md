@@ -2,7 +2,19 @@
 
 En mobilapp (PWA) för att göra kollage av 2–3 bilder (JPG, PNG, WEBP, GIF) med text, och spara som JPEG eller animerad GIF. Allt sker i telefonen – inga bilder laddas upp.
 
-## Publicera med GitHub Pages
+## Android-appen (APK)
+
+Varje gång något ändras i repot bygger GitHub automatiskt en ny APK.
+
+**Ladda ner senaste versionen på telefonen:**
+https://github.com/vbromsV/Claude_Collage_App/releases/latest/download/collage.apk
+
+Installera filen. Nya versioner installeras ovanpå den gamla (samma signeringsnyckel används alltid).
+Sparade kollage hamnar i **Bilder/Collage** och syns i Google Foto.
+
+Bygget finns under fliken **Actions** i repot, och färdiga filer under **Releases**.
+
+## Publicera med GitHub Pages (valfritt, webbversion)
 
 1. Gå till repot på GitHub → **Settings** → **Pages**.
 2. Under **Build and deployment**: Source = **Deploy from a branch**.

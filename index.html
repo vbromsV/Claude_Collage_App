@@ -96,20 +96,20 @@
                   <span class="field-label">Custom size</span>
                   <input type="number" id="customSize" min="8" max="400" step="1" inputmode="numeric">
                 </label>
-                <label class="field">
-                  <span class="field-label">Text color</span>
-                  <input type="color" id="textColor" value="#ffffff">
-                </label>
+              </div>
+              <div class="field">
+                <span class="field-label">Text color</span>
+                <input type="color" id="textColor" value="#ffffff">
               </div>
               <label class="switch-row">
                 <span>Background strip</span>
                 <input type="checkbox" class="switch" id="bgToggle">
               </label>
-              <div class="grid2" id="bgFields">
-                <label class="field">
+              <div id="bgFields">
+                <div class="field">
                   <span class="field-label">Strip color</span>
                   <input type="color" id="bgColor" value="#000000">
-                </label>
+                </div>
                 <label class="field">
                   <span class="field-label">Opacity <output id="bgOpacityValue">50</output></span>
                   <input type="range" id="bgOpacity" min="0" max="100" step="1" value="50">
@@ -201,6 +201,7 @@
             </label>
 
             <h3>Privacy</h3>
+            <p>In the Android app, saved collages go to <b>Pictures/Collage</b> and show up in Google Photos.</p>
             <p>Everything happens on your device. Your images are never uploaded anywhere. The app works offline once it has been opened.</p>
             <p class="version">Version <span id="appVersion"></span></p>
           </div>

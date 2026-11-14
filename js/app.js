@@ -1,6 +1,6 @@
 import { loadGifLibs, GifFramePlayer, decodeGifFirstFrame } from './gif.js';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 /* ============================================================
    Constants
@@ -32,6 +32,7 @@ const MSG = {
   saveFailed: 'Could not save. Try again.',
 };
 
+const NATIVE = typeof window.AndroidBridge !== 'undefined';
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -1098,7 +1099,38 @@ function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+async function saveViaBridge(blob, name) {
+  const bridge = window.AndroidBridge;
+  const id = bridge.beginSave(name, blob.type);
+  if (!id) throw new Error('beginSave failed');
+  let ok = true;
+  try {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const CHUNK = 3 * 128 * 1024; // multiple of 3 so base64 chunks join cleanly
+    for (let i = 0; i < bytes.length && ok; i += CHUNK) {
+      const part = bytes.subarray(i, i + CHUNK);
+      let bin = '';
+      for (let j = 0; j < part.length; j += 0x8000) {
+        bin += String.fromCharCode.apply(null, part.subarray(j, j + 0x8000));
+      }
+      ok = bridge.writeChunk(id, btoa(bin));
+    }
+  } catch (err) {
+    ok = false;
+    throw err;
+  } finally {
+    const done = bridge.finishSave(id, ok);
+    if (ok && !done) ok = false;
+  }
+  if (!ok) throw new Error('save failed');
+}
+
 async function deliver(blob, name, handle) {
+  if (NATIVE) {
+    await saveViaBridge(blob, name);
+    toast('Saved to Pictures/Collage');
+    return;
+  }
   if (handle) {
     const w = await handle.createWritable();
     await w.write(blob);
@@ -1556,11 +1588,47 @@ window.addEventListener('appinstalled', () => { $('installBox').hidden = true; t
 const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 if (IS_IOS && !standalone) $('iosInstallHint').hidden = false;
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if (NATIVE) $('installBox').hidden = true;
+
+if (!NATIVE && 'serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW registration failed', err));
   });
 }
+
+// Android back button (APK): close dialogs, then the control panel.
+window.__collageBack = () => {
+  if (!$('progress').hidden) { progress.cancelled = true; return true; }
+  if (!$('modal').hidden) { if (dialogResolve) { $('modal').hidden = true; const r = dialogResolve; dialogResolve = null; r('cancel'); } return true; }
+  if (!sheet.classList.contains('collapsed')) { setSheet(false); return true; }
+  return false;
+};
+
+/* ============================================================
+   Color swatches (quick picks next to the color pickers)
+   ============================================================ */
+const SWATCHES = ['#ffffff', '#000000', '#ffd60a', '#ff453a', '#3fa2ff', '#30d158'];
+function addSwatches(inputId) {
+  const input = $(inputId);
+  const row = document.createElement('div');
+  row.className = 'swatches';
+  input.parentNode.insertBefore(row, input);
+  row.appendChild(input);
+  SWATCHES.forEach((c) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.style.background = c;
+    b.setAttribute('aria-label', 'Color ' + c);
+    b.addEventListener('click', () => {
+      input.value = c;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    row.appendChild(b);
+  });
+}
+addSwatches('textColor');
+addSwatches('bgColor');
 
 /* ============================================================
    Start

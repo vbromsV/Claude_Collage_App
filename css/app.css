@@ -241,6 +241,19 @@ input[type="range"] { width: 100%; height: var(--tap); accent-color: var(--accen
 .switch:checked::after { transform: translateX(20px); }
 .switch:disabled { opacity: .4; }
 
+.swatches { display: flex; gap: 6px; align-items: center; }
+.swatches input[type="color"] { flex: 1 1 auto; min-width: 56px; }
+.swatch {
+  width: var(--tap);
+  height: var(--tap);
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch:active { transform: scale(.92); }
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .chip {
   min-height: var(--tap);
