@@ -1,6 +1,6 @@
 // Service worker: keeps the app shell available offline.
 // Bump VERSION whenever app files change so phones pick up the new version.
-const VERSION = 'collage-v1.1.0';
+const VERSION = 'collage-v1.2.0';
 const SHELL = [
   './',
   './index.html',

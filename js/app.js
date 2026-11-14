@@ -1,6 +1,6 @@
 import { loadGifLibs, GifFramePlayer, decodeGifFirstFrame } from './gif.js';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 /* ============================================================
    Constants
@@ -1522,6 +1522,51 @@ function syncCollections() {
     box.appendChild(div);
   });
   $('btnRandomizeAll').disabled = !state.slots.some((s) => s.collection.length);
+  syncTopRandom();
+}
+
+const SHUFFLE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 9.2 5.4 4 4 5.4l5.2 5.2 1.4-1.4zM14.5 4l2 2L4 18.6 5.4 20 18 7.5l2 2V4h-5.5zm.3 9.4-1.4 1.4 3.1 3.1-2 2.1H20v-5.5l-2 2-3.2-3.1z"/></svg>';
+let randomBusy = false;
+
+async function runTopRandom(btn, fn) {
+  if (randomBusy) return;
+  randomBusy = true;
+  btn.classList.add('busy');
+  try { await fn(); } finally {
+    randomBusy = false;
+    btn.classList.remove('busy');
+  }
+}
+
+function syncTopRandom() {
+  const box = $('topRandom');
+  box.innerHTML = '';
+  const labels = slotLabels();
+  const withColl = state.slots.map((s, i) => (s.collection.length ? i : -1)).filter((i) => i >= 0);
+  box.hidden = withColl.length === 0;
+  withColl.forEach((i) => {
+    const b = document.createElement('button');
+    b.className = 'rand-btn';
+    b.setAttribute('aria-label', 'Randomize ' + labels[i]);
+    b.title = 'Randomize ' + labels[i];
+    b.innerHTML = SHUFFLE_SVG + '<span>' + labels[i][0] + '</span>';
+    b.addEventListener('click', () => runTopRandom(b, async () => {
+      const ok = await randomizeSlot(i);
+      if (ok) { state.sel = { type: 'slot', index: i }; state.lastSlot = i; }
+      syncUI();
+      requestRender();
+    }));
+    box.appendChild(b);
+  });
+  if (withColl.length > 1) {
+    const b = document.createElement('button');
+    b.className = 'rand-btn all';
+    b.setAttribute('aria-label', 'Randomize all');
+    b.title = 'Randomize all';
+    b.innerHTML = SHUFFLE_SVG + '<span>ALL</span>';
+    b.addEventListener('click', () => runTopRandom(b, randomizeAll));
+    box.appendChild(b);
+  }
 }
 
 function syncUI() {
