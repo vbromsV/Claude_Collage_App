@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Collage</title>
+  <meta name="description" content="Make photo and GIF collages on your phone. Everything stays on your device.">
+  <meta name="theme-color" content="#121214">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Collage">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <h1 class="app-name">Collage</h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="btnTopReset" aria-label="Reset image adjustments" title="Reset image adjustments">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+        </button>
+        <button class="icon-btn" id="btnMore" aria-label="Help and settings" title="Help and settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="canvas-area" id="canvasArea">
+      <canvas id="stage" aria-label="Collage preview"></canvas>
+    </main>
+
+    <section class="sheet collapsed" id="sheet" aria-label="Controls">
+      <div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" aria-label="Show or hide controls">
+        <span class="grip"></span>
+      </div>
+
+      <div class="quickbar">
+        <button class="btn" id="btnAddImages">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>
+          Add Images
+        </button>
+        <button class="btn primary" id="btnQuickSave">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          Quick Save
+        </button>
+        <button class="icon-btn" id="btnToggleSheet" aria-label="Show more controls">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 15.4 12 10.8l4.6 4.6L18 14l-6-6-6 6z"/></svg>
+        </button>
+      </div>
+
+      <div class="sheet-body">
+        <nav class="tabs" role="tablist">
+          <button class="tab active" data-tab="images" role="tab">Images</button>
+          <button class="tab" data-tab="text" role="tab">Text</button>
+          <button class="tab" data-tab="layout" role="tab">Layout</button>
+          <button class="tab" data-tab="collections" role="tab">Collections</button>
+          <button class="tab" data-tab="export" role="tab">Export</button>
+          <button class="tab" data-tab="help" role="tab">Help</button>
+        </nav>
+
+        <div class="panels">
+          <!-- IMAGES -->
+          <div class="panel active" data-panel="images">
+            <div class="row seg" id="slotRow"></div>
+            <div class="row">
+              <button class="btn" id="btnChangeImage">Change Image</button>
+              <button class="btn" id="btnFlip">Flip</button>
+              <button class="btn" id="btnResetSlot">Reset</button>
+            </div>
+            <label class="field">
+              <span class="field-label">Rotation <output id="rotValue">0°</output></span>
+              <input type="range" id="rotSlider" min="0" max="360" step="1" value="0">
+            </label>
+            <p class="hint">One finger: move &middot; Pinch: zoom &middot; Two-finger twist: rotate &middot; Tap an empty slot to add an image.</p>
+          </div>
+
+          <!-- TEXT -->
+          <div class="panel" data-panel="text">
+            <div class="row">
+              <button class="btn" id="btnAddText">Add Text</button>
+              <button class="btn" id="btnEditText">Edit</button>
+              <button class="btn danger" id="btnRemoveText">Remove</button>
+            </div>
+            <ul class="text-list" id="textList"></ul>
+            <div id="textControls">
+              <div class="grid2">
+                <label class="field">
+                  <span class="field-label">Font size</span>
+                  <select id="fontSize"></select>
+                </label>
+                <label class="field" id="customSizeField" hidden>
+                  <span class="field-label">Custom size</span>
+                  <input type="number" id="customSize" min="8" max="400" step="1" inputmode="numeric">
+                </label>
+                <label class="field">
+                  <span class="field-label">Text color</span>
+                  <input type="color" id="textColor" value="#ffffff">
+                </label>
+              </div>
+              <label class="switch-row">
+                <span>Background strip</span>
+                <input type="checkbox" class="switch" id="bgToggle">
+              </label>
+              <div class="grid2" id="bgFields">
+                <label class="field">
+                  <span class="field-label">Strip color</span>
+                  <input type="color" id="bgColor" value="#000000">
+                </label>
+                <label class="field">
+                  <span class="field-label">Opacity <output id="bgOpacityValue">50</output></span>
+                  <input type="range" id="bgOpacity" min="0" max="100" step="1" value="50">
+                </label>
+              </div>
+              <label class="switch-row">
+                <span>Full width <small>(centered, vertical move only)</small></span>
+                <input type="checkbox" class="switch" id="fullWidthToggle">
+              </label>
+            </div>
+            <p class="hint" id="textHint">Tap text to select it, drag to move, double-tap to edit, pinch to resize.</p>
+          </div>
+
+          <!-- LAYOUT -->
+          <div class="panel" data-panel="layout">
+            <div class="field-label">Orientation</div>
+            <div class="row seg" id="orientSeg">
+              <button class="seg-btn" data-orient="h">Horizontal</button>
+              <button class="seg-btn" data-orient="v">Vertical</button>
+            </div>
+            <div class="field-label">Slots</div>
+            <div class="row seg" id="countSeg">
+              <button class="seg-btn" data-count="2">2 images</button>
+              <button class="seg-btn" data-count="3">3 images</button>
+            </div>
+            <div class="field-label">Aspect ratio</div>
+            <div class="chips" id="ratioChips"></div>
+            <div class="grid2" id="freeFields" hidden>
+              <label class="field">
+                <span class="field-label">W</span>
+                <input type="number" id="freeW" min="1" step="1" inputmode="numeric" value="1">
+              </label>
+              <label class="field">
+                <span class="field-label">H</span>
+                <input type="number" id="freeH" min="1" step="1" inputmode="numeric" value="1">
+              </label>
+            </div>
+            <p class="hint">Drag the lines between images to change their sizes.</p>
+          </div>
+
+          <!-- COLLECTIONS -->
+          <div class="panel" data-panel="collections">
+            <p class="hint">A collection is a set of images for one slot. Randomize picks a new one each time, with no repeats until all have been used.</p>
+            <div id="collectionList"></div>
+            <button class="btn primary wide" id="btnRandomizeAll">Randomize All</button>
+          </div>
+
+          <!-- EXPORT -->
+          <div class="panel" data-panel="export">
+            <p class="export-hint" id="exportHint">Export as JPEG</p>
+            <div class="row">
+              <button class="btn primary" id="btnQuickSave2">Quick Save</button>
+              <button class="btn" id="btnSaveAs">Save As…</button>
+            </div>
+            <p class="hint" id="exportDetail"></p>
+          </div>
+
+          <!-- HELP -->
+          <div class="panel help" data-panel="help">
+            <div id="installBox" hidden>
+              <button class="btn primary wide" id="btnInstall">Install app</button>
+            </div>
+            <p class="hint" id="iosInstallHint" hidden>To install: tap the Share button in Safari, then “Add to Home Screen”.</p>
+
+            <h3>Gestures</h3>
+            <ul>
+              <li><b>Tap</b> a slot or text to select it.</li>
+              <li><b>One finger drag</b> moves the selected image or text.</li>
+              <li><b>Pinch</b> zooms the image (0.5×–5×). On text, pinch changes the size.</li>
+              <li><b>Two-finger twist</b> rotates the image (can be turned off below).</li>
+              <li><b>Drag a divider line</b> to resize the slots.</li>
+              <li><b>Double-tap</b> text to edit it.</li>
+              <li><b>Tap an empty slot</b> to pick an image for it.</li>
+            </ul>
+
+            <h3>GIFs</h3>
+            <ul>
+              <li>In the editor a GIF shows its first frame as a still picture.</li>
+              <li>If the collage contains a GIF, it is exported as an animated GIF. Otherwise it is exported as JPEG.</li>
+              <li>The first GIF in the collage (left/top first) sets the animation: its frames and timing are used.</li>
+              <li>Other images, including any other GIFs, appear as still pictures in the exported GIF.</li>
+              <li>GIFs are exported at 720 px on the long side and up to 256 colors per frame, so they stay a reasonable size. JPEGs are exported at 2048 px.</li>
+            </ul>
+
+            <h3>Settings</h3>
+            <label class="switch-row">
+              <span>Two-finger rotate gesture</span>
+              <input type="checkbox" class="switch" id="rotateGestureToggle" checked>
+            </label>
+
+            <h3>Privacy</h3>
+            <p>Everything happens on your device. Your images are never uploaded anywhere. The app works offline once it has been opened.</p>
+            <p class="version">Version <span id="appVersion"></span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- hidden file inputs -->
+  <input type="file" id="fileAdd" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
+  <input type="file" id="fileChange" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" hidden>
+  <input type="file" id="fileCollection" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle"></h2>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="progress" hidden>
+    <div class="modal-card">
+      <h2 id="progressTitle">Creating GIF…</h2>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <p class="hint" id="progressText">0%</p>
+      <div class="modal-actions">
+        <button class="btn" id="btnCancelExport">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
