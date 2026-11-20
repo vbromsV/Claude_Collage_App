@@ -20,7 +20,6 @@
     <header class="topbar">
       <h1 class="app-name">Collage</h1>
       <div class="topbar-actions">
-        <div class="rand-group" id="topRandom" hidden></div>
         <button class="icon-btn" id="btnTopReset" aria-label="Reset image adjustments" title="Reset image adjustments">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
         </button>
@@ -33,6 +32,8 @@
     <main class="canvas-area" id="canvasArea">
       <canvas id="stage" aria-label="Collage preview"></canvas>
     </main>
+
+    <div class="randbar" id="randBar" hidden></div>
 
     <section class="sheet collapsed" id="sheet" aria-label="Controls">
       <div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" aria-label="Show or hide controls">
@@ -184,7 +185,7 @@
               <li><b>Drag a divider line</b> to resize the slots.</li>
               <li><b>Double-tap</b> text to edit it.</li>
               <li><b>Tap an empty slot</b> to pick an image for it.</li>
-              <li><b>Shuffle buttons</b> in the top bar randomize a slot (L/M/R or T/M/B) or all slots from their collections, without opening the menu.</li>
+              <li><b>Shuffle buttons</b> below the collage randomize a slot (Left, Middle, Right…) or all slots from their collections, without opening the menu.</li>
             </ul>
 
             <h3>GIFs</h3>
@@ -213,9 +214,9 @@
   </div>
 
   <!-- hidden file inputs -->
-  <input type="file" id="fileAdd" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
-  <input type="file" id="fileChange" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" hidden>
-  <input type="file" id="fileCollection" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
+  <input type="file" id="fileAdd" accept="image/*,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
+  <input type="file" id="fileChange" accept="image/*,.jpg,.jpeg,.png,.webp,.gif" hidden>
+  <input type="file" id="fileCollection" accept="image/*,.jpg,.jpeg,.png,.webp,.gif" multiple hidden>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

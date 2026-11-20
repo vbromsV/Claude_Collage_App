@@ -1,6 +1,6 @@
 import { loadGifLibs, GifFramePlayer, decodeGifFirstFrame } from './gif.js';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 /* ============================================================
    Constants
@@ -21,8 +21,8 @@ const RATIOS = [
 ];
 const FONT_SIZES = [16, 24, 32, 40, 48, 64, 80, 120, 160, 200];
 const FONT_STACK = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-const ACCEPT_MIME = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/webp', 'image/gif'];
-const ACCEPT_EXT = /\.(jpe?g|png|webp|gif)$/i;
+const ACCEPT_EXT = /\.(jpe?g|jfif|png|webp|gif|avif|bmp)$/i;
+const NON_IMAGE_EXT = /\.(mp4|mov|m4v|3gp|webm|mkv|avi|pdf|txt|zip|heic|heif|dng|raw)$/i;
 
 const MSG = {
   unsupported: 'Unsupported file type.',
@@ -110,10 +110,29 @@ function hexToRgba(hex, a) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
+// Lenient check: anything that looks like an image the browser may decode is accepted.
+// Files that turn out not to decode are skipped later with a clear message.
 function isSupportedFile(file) {
   const t = (file.type || '').toLowerCase();
-  if (t && ACCEPT_MIME.includes(t)) return true;
-  return ACCEPT_EXT.test(file.name || '');
+  const name = file.name || '';
+  if (ACCEPT_EXT.test(name)) return true;
+  if (NON_IMAGE_EXT.test(name)) return false;
+  if (/^image\/(heic|heif)/.test(t)) return false; // not decodable in Chrome
+  if (t.startsWith('image/')) return true;
+  return t === '' || t === 'application/octet-stream'; // unknown: try to decode it
+}
+
+function describeType(file) {
+  const ext = ((file.name || '').match(/\.([a-z0-9]+)$/i) || [])[1];
+  if (ext) return ext.toUpperCase();
+  if (file.type) return file.type.replace(/^\w+\//, '').toUpperCase();
+  return 'unknown';
+}
+
+function summarizeRejected(files) {
+  const counts = {};
+  files.forEach((f) => { const k = describeType(f); counts[k] = (counts[k] || 0) + 1; });
+  return Object.entries(counts).map(([k, n]) => `${k} ×${n}`).join(', ');
 }
 function isGifFile(file) {
   return (file.type || '').toLowerCase() === 'image/gif' || /\.gif$/i.test(file.name || '');
@@ -728,7 +747,9 @@ $('fileAdd').addEventListener('change', async (e) => {
   let files = [...(e.target.files || [])];
   if (!files.length) return;
   const supported = files.filter(isSupportedFile);
-  if (supported.length < files.length) toast(MSG.unsupported, true);
+  if (supported.length < files.length) {
+    toast(`${MSG.unsupported} Skipped: ${summarizeRejected(files.filter((f) => !isSupportedFile(f)))}`, true);
+  }
   files = supported;
   if (!files.length) return;
 
@@ -877,23 +898,36 @@ async function randomizeSlot(index, { quiet = false } = {}) {
     if (!quiet) toast(MSG.collectionEmpty, true);
     return false;
   }
-  // try a few times in case a file can't be read anymore
-  for (let attempt = 0; attempt < Math.min(5, slot.collection.length); attempt++) {
+  // Files that can't be opened are removed from the collection and the next one is tried.
+  const failed = [];
+  let result = false;
+  while (slot.collection.length && failed.length < 20) {
     if (!slot.bag.length) refillBag(slot);
     const pick = slot.bag.pop();
-    slot.lastPick = pick;
     const file = slot.collection[pick];
     try {
       const img = await loadImageFile(file);
       if (state.slots[index] !== slot) return false; // layout changed meanwhile
       slot.img = img;
-      return true;
+      slot.lastPick = pick;
+      result = true;
+      break;
     } catch (err) {
       console.warn('randomize failed for', file && file.name, err);
+      failed.push(file);
+      slot.collection.splice(pick, 1);
+      slot.bag = slot.bag.map((i) => (i > pick ? i - 1 : i));
+      if (slot.lastPick > pick) slot.lastPick--;
+      else if (slot.lastPick === pick) slot.lastPick = -1;
     }
   }
-  toast(MSG.unsupported, true);
-  return false;
+  if (failed.length) {
+    const label = slotLabels()[index];
+    toast(`${label}: skipped ${failed.length} image${failed.length === 1 ? '' : 's'} that could not be opened (${summarizeRejected(failed)}).`, true);
+  } else if (!result && !quiet) {
+    toast(MSG.collectionEmpty, true);
+  }
+  return result;
 }
 
 async function randomizeAll() {
@@ -909,13 +943,16 @@ $('fileCollection').addEventListener('change', (e) => {
   const files = [...(e.target.files || [])];
   if (!files.length) return;
   const ok = files.filter(isSupportedFile);
-  if (ok.length < files.length) toast(MSG.unsupported, true);
+  const rejected = files.filter((f) => !isSupportedFile(f));
   const slot = state.slots[collectionTarget];
   if (!slot) return;
   slot.collection = ok;
   slot.bag = [];
   slot.lastPick = -1;
+  const label = slotLabels()[collectionTarget];
   if (!ok.length) toast(MSG.collectionEmpty, true);
+  else if (rejected.length) toast(`${label}: ${ok.length} images added. ${MSG.unsupported} Skipped: ${summarizeRejected(rejected)}`, true);
+  else toast(`${label}: ${ok.length} images added`);
   syncUI();
 });
 
@@ -1539,17 +1576,16 @@ async function runTopRandom(btn, fn) {
 }
 
 function syncTopRandom() {
-  const box = $('topRandom');
+  const box = $('randBar');
   box.innerHTML = '';
   const labels = slotLabels();
   const withColl = state.slots.map((s, i) => (s.collection.length ? i : -1)).filter((i) => i >= 0);
   box.hidden = withColl.length === 0;
   withColl.forEach((i) => {
     const b = document.createElement('button');
-    b.className = 'rand-btn';
+    b.className = 'btn rand-btn';
     b.setAttribute('aria-label', 'Randomize ' + labels[i]);
-    b.title = 'Randomize ' + labels[i];
-    b.innerHTML = SHUFFLE_SVG + '<span>' + labels[i][0] + '</span>';
+    b.innerHTML = SHUFFLE_SVG + '<span>' + labels[i] + '</span>';
     b.addEventListener('click', () => runTopRandom(b, async () => {
       const ok = await randomizeSlot(i);
       if (ok) { state.sel = { type: 'slot', index: i }; state.lastSlot = i; }
@@ -1560,10 +1596,9 @@ function syncTopRandom() {
   });
   if (withColl.length > 1) {
     const b = document.createElement('button');
-    b.className = 'rand-btn all';
+    b.className = 'btn rand-btn all';
     b.setAttribute('aria-label', 'Randomize all');
-    b.title = 'Randomize all';
-    b.innerHTML = SHUFFLE_SVG + '<span>ALL</span>';
+    b.innerHTML = SHUFFLE_SVG + '<span>All</span>';
     b.addEventListener('click', () => runTopRandom(b, randomizeAll));
     box.appendChild(b);
   }
